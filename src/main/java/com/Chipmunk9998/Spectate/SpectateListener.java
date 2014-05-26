@@ -1,8 +1,7 @@
 package com.Chipmunk9998.Spectate;
 
-import com.Chipmunk9998.Spectate.api.ScrollDirection;
-import com.Chipmunk9998.Spectate.api.SpectateMode;
-import com.Chipmunk9998.Spectate.api.SpectateScrollEvent;
+import java.util.ArrayList;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Monster;
@@ -13,425 +12,447 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.*;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.ArrayList;
+import com.Chipmunk9998.Spectate.api.ScrollDirection;
+import com.Chipmunk9998.Spectate.api.SpectateMode;
+import com.Chipmunk9998.Spectate.api.SpectateScrollEvent;
 
 public class SpectateListener implements Listener {
-	
-	Spectate plugin;
-	
-	public SpectateListener(Spectate plugin) {
-		
-		this.plugin = plugin;
-		
-	}
 
-	@EventHandler
-	public void onPlayerJoin(PlayerJoinEvent event) {
+    Spectate plugin;
 
-		for (Player p : Spectate.getAPI().getSpectatingPlayers()) {
+    public SpectateListener(Spectate plugin) {
 
-			event.getPlayer().hidePlayer(p);
+        this.plugin = plugin;
 
-		}
+    }
 
-	}
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
 
-	@EventHandler
-	public void onPlayerQuit(PlayerQuitEvent event) {
+        for (final Player p: Spectate.getAPI().getSpectatingPlayers()) {
 
-		if (Spectate.getAPI().isSpectating(event.getPlayer())) {
-
-			Spectate.getAPI().stopSpectating(event.getPlayer(), true);
-
-        }else if (Spectate.getAPI().isBeingSpectated(event.getPlayer())) {
-
-			for (Player p : Spectate.getAPI().getSpectators(event.getPlayer())) {
-
-				if (Spectate.getAPI().getSpectateMode(p) == SpectateMode.SCROLL || Spectate.getAPI().isScanning(p)) {
-
-					SpectateScrollEvent scrollEvent = new SpectateScrollEvent(p, Spectate.getAPI().getSpectateablePlayers(), ScrollDirection.RIGHT);
-					Bukkit.getServer().getPluginManager().callEvent(scrollEvent);
-
-					ArrayList<Player> playerList = scrollEvent.getSpectateList();
-
-					playerList.remove(p);
-					playerList.remove(event.getPlayer());
-
-					p.sendMessage(ChatColor.GRAY + "The person you were previously spectating has disconnected.");
-
-					if (!Spectate.getAPI().scrollRight(p, playerList)) {
-
-						Spectate.getAPI().stopSpectating(p, true);
-						p.sendMessage(ChatColor.GRAY + "You were forced to stop spectating because there is nobody left to spectate.");
-
-					}
-
-				}else {
-
-					Spectate.getAPI().stopSpectating(p, true);
-					p.sendMessage(ChatColor.GRAY + "You were forced to stop spectating because the person you were spectating disconnected.");
-
-				}
-
-			}
+            event.getPlayer().hidePlayer(p);
 
         }
 
-	}
+    }
 
-	@EventHandler
-	public void onPlayerDeath(PlayerDeathEvent event) {
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
 
-		if (Spectate.getAPI().isBeingSpectated(event.getEntity())) {
+        if (Spectate.getAPI().isSpectating(event.getPlayer())) {
 
-			for (Player p : Spectate.getAPI().getSpectators(event.getEntity())) {
+            Spectate.getAPI().stopSpectating(event.getPlayer(), true);
 
-				if (Spectate.getAPI().getSpectateMode(p) == SpectateMode.SCROLL || Spectate.getAPI().isScanning(p)) {
+        } else if (Spectate.getAPI().isBeingSpectated(event.getPlayer())) {
 
-					SpectateScrollEvent scrollEvent = new SpectateScrollEvent(p, Spectate.getAPI().getSpectateablePlayers(), ScrollDirection.RIGHT);
-					Bukkit.getServer().getPluginManager().callEvent(scrollEvent);
+            for (final Player p: Spectate.getAPI().getSpectators(event.getPlayer())) {
 
-					ArrayList<Player> playerList = scrollEvent.getSpectateList();
+                if (Spectate.getAPI().getSpectateMode(p) == SpectateMode.SCROLL || Spectate.getAPI().isScanning(p)) {
 
-					playerList.remove(p);
-					playerList.remove(event.getEntity());
+                    final SpectateScrollEvent scrollEvent = new SpectateScrollEvent(p, Spectate.getAPI()
+                            .getSpectateablePlayers(), ScrollDirection.RIGHT);
+                    Bukkit.getServer().getPluginManager().callEvent(scrollEvent);
 
-					p.sendMessage(ChatColor.GRAY + "The person you were previously spectating has died.");
+                    final ArrayList<Player> playerList = scrollEvent.getSpectateList();
 
-					if (!Spectate.getAPI().scrollRight(p, playerList)) {
+                    playerList.remove(p);
+                    playerList.remove(event.getPlayer());
 
-						Spectate.getAPI().stopSpectating(p, true);
-						p.sendMessage(ChatColor.GRAY + "You were forced to stop spectating because there is nobody left to spectate.");
+                    p.sendMessage(ChatColor.GRAY + "The person you were previously spectating has disconnected.");
 
-					}
+                    if (!Spectate.getAPI().scrollRight(p, playerList)) {
 
-				}else {
+                        Spectate.getAPI().stopSpectating(p, true);
+                        p.sendMessage(ChatColor.GRAY
+                                + "You were forced to stop spectating because there is nobody left to spectate.");
 
-					Spectate.getAPI().stopSpectating(p, true);
-					p.sendMessage(ChatColor.GRAY + "You were forced to stop spectating because the person you were spectating died.");
+                    }
 
-				}
+                } else {
 
-			}
+                    Spectate.getAPI().stopSpectating(p, true);
+                    p.sendMessage(ChatColor.GRAY
+                            + "You were forced to stop spectating because the person you were spectating disconnected.");
 
-        }
+                }
 
-	}
-
-	@EventHandler
-	public void onPlayerDamage(EntityDamageEvent event) {
-
-		if (event instanceof EntityDamageByEntityEvent) {
-
-			EntityDamageByEntityEvent event1 = (EntityDamageByEntityEvent) event;
-
-			if (event1.getDamager() instanceof Player) {
-
-				if (Spectate.getAPI().isSpectating((Player)event1.getDamager())) {
-
-					event.setCancelled(true);
-					return;
-
-				}
-
-			}
-
-		}
-
-		if (!(event.getEntity() instanceof Player)) {
-
-			return;
-
-		}
-
-		Player p = (Player) event.getEntity();
-
-		if (Spectate.getAPI().isSpectating(p)) {
-
-			event.setCancelled(true);
+            }
 
         }
 
-	}
+    }
 
-	@EventHandler
-	public void onPlayerInteract(PlayerInteractEvent event) {
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
 
-		if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+        if (Spectate.getAPI().isBeingSpectated(event.getEntity())) {
 
-			if (Spectate.getAPI().isReadyForNextScroll(event.getPlayer())) {
+            for (final Player p: Spectate.getAPI().getSpectators(event.getEntity())) {
 
-				if (Spectate.getAPI().getSpectateMode(event.getPlayer()) == SpectateMode.SCROLL) {
+                if (Spectate.getAPI().getSpectateMode(p) == SpectateMode.SCROLL || Spectate.getAPI().isScanning(p)) {
 
-					if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                    final SpectateScrollEvent scrollEvent = new SpectateScrollEvent(p, Spectate.getAPI()
+                            .getSpectateablePlayers(), ScrollDirection.RIGHT);
+                    Bukkit.getServer().getPluginManager().callEvent(scrollEvent);
 
-						if (Bukkit.getServer().getOnlinePlayers().length > 2) {
+                    final ArrayList<Player> playerList = scrollEvent.getSpectateList();
 
-							Spectate.getAPI().scrollLeft(event.getPlayer(), Spectate.getAPI().getSpectateablePlayers());
-							Spectate.getAPI().disableScroll(event.getPlayer(), 5);
+                    playerList.remove(p);
+                    playerList.remove(event.getEntity());
 
-						}
+                    p.sendMessage(ChatColor.GRAY + "The person you were previously spectating has died.");
 
-					}else if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                    if (!Spectate.getAPI().scrollRight(p, playerList)) {
 
-						if (Bukkit.getServer().getOnlinePlayers().length > 2) {
+                        Spectate.getAPI().stopSpectating(p, true);
+                        p.sendMessage(ChatColor.GRAY
+                                + "You were forced to stop spectating because there is nobody left to spectate.");
 
-							Spectate.getAPI().scrollRight(event.getPlayer(), Spectate.getAPI().getSpectateablePlayers());
-							Spectate.getAPI().disableScroll(event.getPlayer(), 5);
+                    }
 
-						}
+                } else {
 
-					}
+                    Spectate.getAPI().stopSpectating(p, true);
+                    p.sendMessage(ChatColor.GRAY
+                            + "You were forced to stop spectating because the person you were spectating died.");
 
-				}
+                }
 
-			}
-
-			event.setCancelled(true);
-
-        }
-
-	}
-
-	@EventHandler
-	public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-
-		if (Spectate.getAPI().isSpectating(event.getPlayer())) {
-
-			if (Spectate.getAPI().isReadyForNextScroll(event.getPlayer())) {
-
-				if (Spectate.getAPI().getSpectateMode(event.getPlayer()) == SpectateMode.SCROLL) {
-
-					if (Bukkit.getServer().getOnlinePlayers().length > 2) {
-
-						Spectate.getAPI().scrollRight(event.getPlayer(), Spectate.getAPI().getSpectateablePlayers());
-						Spectate.getAPI().disableScroll(event.getPlayer(), 5);
-
-					}
-
-				}
-
-			}
-
-			event.setCancelled(true);
+            }
 
         }
 
-	}
+    }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onFoodLevelChange(FoodLevelChangeEvent event) {
+    @EventHandler
+    public void onPlayerDamage(EntityDamageEvent event) {
 
-		if (event.getEntity() instanceof Player) {
+        if (event instanceof EntityDamageByEntityEvent) {
 
-			Player player = (Player) event.getEntity();
+            final EntityDamageByEntityEvent event1 = (EntityDamageByEntityEvent) event;
 
-			if (!event.isCancelled()) {
+            if (event1.getDamager() instanceof Player) {
 
-				if (Spectate.getAPI().isBeingSpectated(player)) {
+                if (Spectate.getAPI().isSpectating((Player) event1.getDamager())) {
 
-					for (Player p : Spectate.getAPI().getSpectators(player)) {
+                    event.setCancelled(true);
+                    return;
 
-						p.setFoodLevel(event.getFoodLevel());
+                }
 
-					}
+            }
 
-				}
+        }
 
-			}
+        if (!(event.getEntity() instanceof Player)) {
 
-		}
+            return;
 
-	}
+        }
 
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onPlayerGameModeChange(PlayerGameModeChangeEvent event) {
+        final Player p = (Player) event.getEntity();
 
-		if (!event.isCancelled()) {
+        if (Spectate.getAPI().isSpectating(p)) {
 
-			if (Spectate.getAPI().isBeingSpectated(event.getPlayer())) {
+            event.setCancelled(true);
 
-				for (Player p : Spectate.getAPI().getSpectators(event.getPlayer())) {
+        }
 
-					p.setGameMode(event.getNewGameMode());
+    }
 
-				}
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
 
-			}
+        if (Spectate.getAPI().isSpectating(event.getPlayer())) {
 
-		}
+            if (Spectate.getAPI().isReadyForNextScroll(event.getPlayer())) {
 
-	}
+                if (Spectate.getAPI().getSpectateMode(event.getPlayer()) == SpectateMode.SCROLL) {
 
-	@EventHandler
-	public void onInventoryOpen(InventoryOpenEvent event) {
+                    if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
 
-		if (!(event.getPlayer() instanceof Player)) {
+                        if (Bukkit.getServer().getOnlinePlayers().length > 2) {
 
-			return;
+                            Spectate.getAPI().scrollLeft(event.getPlayer(), Spectate.getAPI().getSpectateablePlayers());
+                            Spectate.getAPI().disableScroll(event.getPlayer(), 5);
 
-		}
+                        }
 
-		Player p = (Player) event.getPlayer();
+                    } else if (event.getAction() == Action.RIGHT_CLICK_AIR
+                            || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
-		if (Spectate.getAPI().isBeingSpectated(p)) {
+                        if (Bukkit.getServer().getOnlinePlayers().length > 2) {
 
-			for (Player spectators : Spectate.getAPI().getSpectators(p)) {
+                            Spectate.getAPI()
+                                    .scrollRight(event.getPlayer(), Spectate.getAPI().getSpectateablePlayers());
+                            Spectate.getAPI().disableScroll(event.getPlayer(), 5);
 
-				spectators.openInventory(event.getInventory());
+                        }
 
-			}
+                    }
 
-		}
+                }
 
-	}
+            }
 
-	@EventHandler
-	public void onInventoryClose(InventoryCloseEvent event) {
+            event.setCancelled(true);
 
-		if (!(event.getPlayer() instanceof Player)) {
+        }
 
-			return;
+    }
 
-		}
+    @EventHandler
+    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
 
-		Player p = (Player) event.getPlayer();
+        if (Spectate.getAPI().isSpectating(event.getPlayer())) {
 
-		if (Spectate.getAPI().isBeingSpectated(p)) {
+            if (Spectate.getAPI().isReadyForNextScroll(event.getPlayer())) {
 
-			for (Player spectators : Spectate.getAPI().getSpectators(p)) {
+                if (Spectate.getAPI().getSpectateMode(event.getPlayer()) == SpectateMode.SCROLL) {
 
-				spectators.closeInventory();
+                    if (Bukkit.getServer().getOnlinePlayers().length > 2) {
 
-			}
+                        Spectate.getAPI().scrollRight(event.getPlayer(), Spectate.getAPI().getSpectateablePlayers());
+                        Spectate.getAPI().disableScroll(event.getPlayer(), 5);
 
-		}
+                    }
 
-	}
+                }
 
-	@EventHandler
-	public void onInventoryClick(InventoryClickEvent event) {
+            }
 
-		if (!(event.getWhoClicked() instanceof Player)) {
+            event.setCancelled(true);
 
-			return;
+        }
 
-		}
+    }
 
-		Player p = (Player) event.getWhoClicked();
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onFoodLevelChange(FoodLevelChangeEvent event) {
 
-		if (Spectate.getAPI().isSpectating(p)) {
+        if (event.getEntity() instanceof Player) {
 
-			event.setCancelled(true);
+            final Player player = (Player) event.getEntity();
 
-		}
+            if (!event.isCancelled()) {
 
-	}
+                if (Spectate.getAPI().isBeingSpectated(player)) {
 
-	@EventHandler
-	public void onPlayerDropItem(PlayerDropItemEvent event) {
+                    for (final Player p: Spectate.getAPI().getSpectators(player)) {
 
-		if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+                        p.setFoodLevel(event.getFoodLevel());
 
-			event.setCancelled(true);
+                    }
 
-		}
+                }
 
-	}
+            }
 
-	@EventHandler
-	public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+        }
 
-		if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+    }
 
-			event.setCancelled(true);
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerGameModeChange(PlayerGameModeChangeEvent event) {
 
-		}
+        if (!event.isCancelled()) {
 
-	}
+            if (Spectate.getAPI().isBeingSpectated(event.getPlayer())) {
 
-	@EventHandler
-	public void onBlockBreak(BlockBreakEvent event) {
+                for (final Player p: Spectate.getAPI().getSpectators(event.getPlayer())) {
 
-		if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+                    p.setGameMode(event.getNewGameMode());
 
-			event.setCancelled(true);
+                }
 
-		}
+            }
 
-	}
+        }
 
-	@EventHandler
-	public void onBlockPlace(BlockPlaceEvent event) {
+    }
 
-		if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+    @EventHandler
+    public void onInventoryOpen(InventoryOpenEvent event) {
 
-			event.setCancelled(true);
+        if (!(event.getPlayer() instanceof Player)) {
 
-		}
+            return;
 
-	}
+        }
 
-	@EventHandler
-	public void onPlayerRegen(EntityRegainHealthEvent event) {
+        final Player p = (Player) event.getPlayer();
 
-		if (event.getEntity() instanceof Player) {
+        if (Spectate.getAPI().isBeingSpectated(p)) {
 
-			Player p = (Player) event.getEntity();
+            for (final Player spectators: Spectate.getAPI().getSpectators(p)) {
 
-			if (Spectate.getAPI().isSpectating(p)) {
+                spectators.openInventory(event.getInventory());
 
-				event.setCancelled(true);
+            }
 
-			}
+        }
 
-		}
+    }
 
-	}
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
 
-	@EventHandler
-	public void onMobTarget(EntityTargetEvent event) {
+        if (!(event.getPlayer() instanceof Player)) {
 
-		if (event.getEntity() instanceof Monster) {
+            return;
 
-			if (event.getTarget() instanceof Player) {
+        }
 
-				if (Spectate.getAPI().isSpectating(((Player)event.getTarget()))) {
+        final Player p = (Player) event.getPlayer();
 
-					event.setCancelled(true);
+        if (Spectate.getAPI().isBeingSpectated(p)) {
 
-				}
+            for (final Player spectators: Spectate.getAPI().getSpectators(p)) {
 
-			}
+                spectators.closeInventory();
 
-		}
+            }
 
-	}
+        }
 
-	@EventHandler
-	public void onCommandPreprocess(PlayerCommandPreprocessEvent event) {
+    }
 
-		if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
 
-			if (plugin.disable_commands) {
+        if (!(event.getWhoClicked() instanceof Player)) {
 
-				if (!event.getMessage().startsWith("/spectate") && !event.getMessage().startsWith("/spec")) {
+            return;
 
-					event.setCancelled(true);
-					event.getPlayer().sendMessage(ChatColor.RED + "You can not execute this command while spectating.");
+        }
 
-				}
+        final Player p = (Player) event.getWhoClicked();
 
-			}
+        if (Spectate.getAPI().isSpectating(p)) {
 
-		}
+            event.setCancelled(true);
 
-	}
+        }
+
+    }
+
+    @EventHandler
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+
+        if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+
+            event.setCancelled(true);
+
+        }
+
+    }
+
+    @EventHandler
+    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+
+        if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+
+            event.setCancelled(true);
+
+        }
+
+    }
+
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+
+        if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+
+            event.setCancelled(true);
+
+        }
+
+    }
+
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+
+        if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+
+            event.setCancelled(true);
+
+        }
+
+    }
+
+    @EventHandler
+    public void onPlayerRegen(EntityRegainHealthEvent event) {
+
+        if (event.getEntity() instanceof Player) {
+
+            final Player p = (Player) event.getEntity();
+
+            if (Spectate.getAPI().isSpectating(p)) {
+
+                event.setCancelled(true);
+
+            }
+
+        }
+
+    }
+
+    @EventHandler
+    public void onMobTarget(EntityTargetEvent event) {
+
+        if (event.getEntity() instanceof Monster) {
+
+            if (event.getTarget() instanceof Player) {
+
+                if (Spectate.getAPI().isSpectating(((Player) event.getTarget()))) {
+
+                    event.setCancelled(true);
+
+                }
+
+            }
+
+        }
+
+    }
+
+    @EventHandler
+    public void onCommandPreprocess(PlayerCommandPreprocessEvent event) {
+
+        if (Spectate.getAPI().isSpectating(event.getPlayer())) {
+
+            if (plugin.disable_commands) {
+
+                if (!event.getMessage().startsWith("/spectate") && !event.getMessage().startsWith("/spec")) {
+
+                    event.setCancelled(true);
+                    event.getPlayer().sendMessage(ChatColor.RED + "You can not execute this command while spectating.");
+
+                }
+
+            }
+
+        }
+
+    }
 
 }

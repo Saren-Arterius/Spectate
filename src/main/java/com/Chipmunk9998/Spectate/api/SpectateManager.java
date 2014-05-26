@@ -1,7 +1,11 @@
 package com.Chipmunk9998.Spectate.api;
 
-import com.Chipmunk9998.Spectate.PlayerState;
-import com.Chipmunk9998.Spectate.Spectate;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -9,882 +13,893 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
+import com.Chipmunk9998.Spectate.PlayerState;
+import com.Chipmunk9998.Spectate.Spectate;
 
 public class SpectateManager {
 
-	private Spectate plugin;
-	private int spectateTask = -1;
+    private final Spectate                           plugin;
+    private int                                      spectateTask     = -1;
 
-	private ArrayList<Player> isSpectating = new ArrayList<Player>();
-	private ArrayList<Player> isBeingSpectated = new ArrayList<Player>();
-	private HashMap<Player, ArrayList<Player>> spectators = new HashMap<Player, ArrayList<Player>>();
-	private HashMap<Player, Player> target = new HashMap<Player, Player>();
+    private final ArrayList<Player>                  isSpectating     = new ArrayList<Player>();
+    private final ArrayList<Player>                  isBeingSpectated = new ArrayList<Player>();
+    private final HashMap<Player, ArrayList<Player>> spectators       = new HashMap<Player, ArrayList<Player>>();
+    private final HashMap<Player, Player>            target           = new HashMap<Player, Player>();
 
-	private ArrayList<String> isClick = new ArrayList<String>();
+    private final ArrayList<String>                  isClick          = new ArrayList<String>();
 
-	private HashMap<String, SpectateMode> playerMode = new HashMap<String, SpectateMode>();
-	private HashMap<String, SpectateAngle> playerAngle = new HashMap<String, SpectateAngle>();
+    private final HashMap<String, SpectateMode>      playerMode       = new HashMap<String, SpectateMode>();
+    private final HashMap<String, SpectateAngle>     playerAngle      = new HashMap<String, SpectateAngle>();
 
-	private ArrayList<String> isScanning = new ArrayList<String>();
-	private HashMap<String, Integer> scanTask = new HashMap<String, Integer>();
+    private final ArrayList<String>                  isScanning       = new ArrayList<String>();
+    private final HashMap<String, Integer>           scanTask         = new HashMap<String, Integer>();
 
-	private HashMap<Player, PlayerState> states = new HashMap<Player, PlayerState>();
-	private HashMap<Player, PlayerState> multiInvStates = new HashMap<Player, PlayerState>();
-	
-	private ArrayList<String> inventoryOff = new ArrayList<String>();
+    private final HashMap<Player, PlayerState>       states           = new HashMap<Player, PlayerState>();
+    private final HashMap<Player, PlayerState>       multiInvStates   = new HashMap<Player, PlayerState>();
 
-	public SpectateManager(Spectate plugin) {
+    private final ArrayList<String>                  inventoryOff     = new ArrayList<String>();
 
-		this.plugin = plugin;
+    public SpectateManager(Spectate plugin) {
 
-	}
+        this.plugin = plugin;
 
-	private void updateSpectators() {
+    }
 
-		spectateTask = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
+    private void updateSpectators() {
 
-			public void run() {
+        spectateTask = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
 
-				for (Player p : plugin.getServer().getOnlinePlayers()) {
+            @Override
+            public void run() {
 
-					if (isSpectating(p)) {
+                for (final Player p: plugin.getServer().getOnlinePlayers()) {
 
-						if (plugin.multiverseInvEnabled()) {
+                    if (isSpectating(p)) {
 
-							if (!p.getWorld().getName().equals(getTarget(p).getWorld().getName())) {
+                        if (plugin.multiverseInvEnabled()) {
 
-								p.sendMessage(ChatColor.GRAY + "You were forced to stop spectating because the person you were spectating switched worlds.");
-								stopSpectating(p, true);
-								continue;
+                            if (!p.getWorld().getName().equals(getTarget(p).getWorld().getName())) {
 
-							}
+                                p.sendMessage(ChatColor.GRAY
+                                        + "You were forced to stop spectating because the person you were spectating switched worlds.");
+                                stopSpectating(p, true);
+                                continue;
 
-						}
+                            }
 
-						if (getSpectateAngle(p) == SpectateAngle.FIRST_PERSON) {
+                        }
 
-							if (roundTwoDecimals(p.getLocation().getX()) != roundTwoDecimals(getTarget(p).getLocation().getX()) || roundTwoDecimals(p.getLocation().getY()) != roundTwoDecimals(getTarget(p).getLocation().getY()) || roundTwoDecimals(p.getLocation().getZ()) != roundTwoDecimals(getTarget(p).getLocation().getZ()) || roundTwoDecimals(p.getLocation().getYaw()) != roundTwoDecimals(getTarget(p).getLocation().getYaw()) || roundTwoDecimals(p.getLocation().getPitch()) != roundTwoDecimals(getTarget(p).getLocation().getPitch())) {
+                        if (getSpectateAngle(p) == SpectateAngle.FIRST_PERSON) {
 
-								p.teleport(getTarget(p));
+                            if (roundTwoDecimals(p.getLocation().getX()) != roundTwoDecimals(getTarget(p).getLocation()
+                                    .getX())
+                                    || roundTwoDecimals(p.getLocation().getY()) != roundTwoDecimals(getTarget(p)
+                                            .getLocation().getY())
+                                    || roundTwoDecimals(p.getLocation().getZ()) != roundTwoDecimals(getTarget(p)
+                                            .getLocation().getZ())
+                                    || roundTwoDecimals(p.getLocation().getYaw()) != roundTwoDecimals(getTarget(p)
+                                            .getLocation().getYaw())
+                                    || roundTwoDecimals(p.getLocation().getPitch()) != roundTwoDecimals(getTarget(p)
+                                            .getLocation().getPitch())) {
 
-							}
+                                p.teleport(getTarget(p));
 
-						}else {
+                            }
 
-							if (getSpectateAngle(p) != SpectateAngle.FREEROAM) {
+                        } else {
 
-								p.teleport(getSpectateLocation(p));
+                            if (getSpectateAngle(p) != SpectateAngle.FREEROAM) {
 
-							}
+                                p.teleport(getSpectateLocation(p));
 
-						}
-						
-						if (!inventoryOff.contains(p.getName())) {
-						    p.getInventory().setContents(getTarget(p).getInventory().getContents());
-						    p.getInventory().setArmorContents(getTarget(p).getInventory().getArmorContents());
-						}
+                            }
 
-						if (getTarget(p).getHealth() == 0) {
+                        }
 
-							p.setHealth(1);
+                        if (!inventoryOff.contains(p.getName())) {
+                            p.getInventory().setContents(getTarget(p).getInventory().getContents());
+                            p.getInventory().setArmorContents(getTarget(p).getInventory().getArmorContents());
+                        }
 
-						}else {
+                        if (getTarget(p).getHealth() == 0) {
 
-							if (getTarget(p).getHealth() < p.getHealth()) {
+                            p.setHealth(1);
 
-								double difference = p.getHealth() - getTarget(p).getHealth();
-								p.damage(difference);
+                        } else {
 
-							}else if (getTarget(p).getHealth() > p.getHealth()) {
+                            if (getTarget(p).getHealth() < p.getHealth()) {
 
-								p.setHealth(getTarget(p).getHealth());
+                                final double difference = p.getHealth() - getTarget(p).getHealth();
+                                p.damage(difference);
 
-							}
+                            } else if (getTarget(p).getHealth() > p.getHealth()) {
 
-						}
+                                p.setHealth(getTarget(p).getHealth());
 
-						p.setLevel(getTarget(p).getLevel());
-						p.setExp(getTarget(p).getExp());
+                            }
 
-						for (PotionEffect e : p.getActivePotionEffects()) {
+                        }
 
-							boolean foundPotion = false;
+                        p.setLevel(getTarget(p).getLevel());
+                        p.setExp(getTarget(p).getExp());
 
-							for (PotionEffect e1 : getTarget(p).getActivePotionEffects()) {
+                        for (final PotionEffect e: p.getActivePotionEffects()) {
 
-								if (e1.getType() == e.getType()) {
+                            boolean foundPotion = false;
 
-									foundPotion = true;
-									break;
+                            for (final PotionEffect e1: getTarget(p).getActivePotionEffects()) {
 
-								}
+                                if (e1.getType() == e.getType()) {
 
-							}
+                                    foundPotion = true;
+                                    break;
 
-							if (!foundPotion) {
+                                }
 
-								p.removePotionEffect(e.getType());
+                            }
 
-							}
+                            if (!foundPotion) {
 
-						}
+                                p.removePotionEffect(e.getType());
 
-						for (PotionEffect e : getTarget(p).getActivePotionEffects()) {
+                            }
 
-							p.addPotionEffect(e);
+                        }
 
-						}
-						
-						if (!inventoryOff.contains(p.getName())) {
-						    p.getInventory().setHeldItemSlot(getTarget(p).getInventory().getHeldItemSlot());
-						}
+                        for (final PotionEffect e: getTarget(p).getActivePotionEffects()) {
 
-						if (getTarget(p).isFlying()) {
+                            p.addPotionEffect(e);
 
-							if (!p.isFlying()) {
+                        }
 
-								p.setFlying(true);
+                        if (!inventoryOff.contains(p.getName())) {
+                            p.getInventory().setHeldItemSlot(getTarget(p).getInventory().getHeldItemSlot());
+                        }
 
-							}
+                        if (getTarget(p).isFlying()) {
 
-						}
+                            if (!p.isFlying()) {
 
-					}
+                                p.setFlying(true);
 
-				}
+                            }
 
-			}
+                        }
 
-		}, 0L, 1L);
+                    }
 
-	}
+                }
 
-	public void startSpectateTask() {
+            }
 
-		if (spectateTask == -1) {
+        }, 0L, 1L);
 
-			updateSpectators();
+    }
 
-		}
+    public void startSpectateTask() {
 
-	}
+        if (spectateTask == -1) {
 
-	public void stopSpectateTask() {
+            updateSpectators();
 
-		if (spectateTask != -1) {
+        }
 
-			plugin.getServer().getScheduler().cancelTask(spectateTask);
-			spectateTask = -1;
+    }
 
-		}
+    public void stopSpectateTask() {
 
-	}
+        if (spectateTask != -1) {
 
-	public void startSpectating(Player p, Player target, boolean saveState) {
+            plugin.getServer().getScheduler().cancelTask(spectateTask);
+            spectateTask = -1;
 
-		if (!isSpectating(p)) {
+        }
 
-			if (saveState) {
+    }
 
-				savePlayerState(p);
+    public void startSpectating(Player p, Player target, boolean saveState) {
 
-			}
+        if (!isSpectating(p)) {
 
-		}
+            if (saveState) {
 
-		boolean saveMultiInvState = false;
+                savePlayerState(p);
 
-		if (plugin.multiverseInvEnabled()) {
+            }
 
-			if (!p.getWorld().getName().equals(target.getWorld().getName())) {
+        }
 
-				saveMultiInvState = true;
+        boolean saveMultiInvState = false;
 
-			}
+        if (plugin.multiverseInvEnabled()) {
 
-		}
+            if (!p.getWorld().getName().equals(target.getWorld().getName())) {
 
-		for (Player player1 : plugin.getServer().getOnlinePlayers()) {
+                saveMultiInvState = true;
 
-			player1.hidePlayer(p);
+            }
 
-		}
+        }
 
-		if (saveMultiInvState) {
+        for (final Player player1: plugin.getServer().getOnlinePlayers()) {
 
-			p.teleport(target.getWorld().getSpawnLocation());
-			multiInvStates.put(p, new PlayerState(p));
+            player1.hidePlayer(p);
 
-		}
+        }
 
-		String playerListName = p.getPlayerListName();
+        if (saveMultiInvState) {
 
-		if (getSpectateAngle(p) == SpectateAngle.FIRST_PERSON) {
+            p.teleport(target.getWorld().getSpawnLocation());
+            multiInvStates.put(p, new PlayerState(p));
 
-			p.hidePlayer(target);
+        }
 
-		}else {
+        final String playerListName = p.getPlayerListName();
 
-			p.showPlayer(target);
+        if (getSpectateAngle(p) == SpectateAngle.FIRST_PERSON) {
 
-		}
+            p.hidePlayer(target);
 
-		p.setPlayerListName(playerListName);
+        } else {
 
-		p.setHealth(target.getHealth());
+            p.showPlayer(target);
 
-		p.teleport(target);
+        }
 
-		if (isSpectating(p)) {
+        p.setPlayerListName(playerListName);
 
-			setBeingSpectated(getTarget(p), false);
-			p.showPlayer(getTarget(p));
-			removeSpectator(getTarget(p), p);
+        p.setHealth(target.getHealth());
 
-		}
+        p.teleport(target);
 
-		for (PotionEffect e : p.getActivePotionEffects()) {
+        if (isSpectating(p)) {
 
-			p.removePotionEffect(e.getType());
+            setBeingSpectated(getTarget(p), false);
+            p.showPlayer(getTarget(p));
+            removeSpectator(getTarget(p), p);
 
-		}
+        }
 
-		setTarget(p, target);
-		addSpectator(target, p);
+        for (final PotionEffect e: p.getActivePotionEffects()) {
 
-		p.setGameMode(target.getGameMode());
-		p.setFoodLevel(target.getFoodLevel());
+            p.removePotionEffect(e.getType());
 
-		setExperienceCooldown(p, Integer.MAX_VALUE);
-		p.setAllowFlight(true);
+        }
 
-		setSpectating(p, true);
-		setBeingSpectated(target, true);
+        setTarget(p, target);
+        addSpectator(target, p);
 
-		p.sendMessage(ChatColor.GRAY + "You are now spectating " + target.getName() + ".");
+        p.setGameMode(target.getGameMode());
+        p.setFoodLevel(target.getFoodLevel());
 
-	}
+        setExperienceCooldown(p, Integer.MAX_VALUE);
+        p.setAllowFlight(true);
 
-	public void stopSpectating(Player p, boolean loadState) {
+        setSpectating(p, true);
+        setBeingSpectated(target, true);
 
-		setSpectating(p, false);
-		setBeingSpectated(getTarget(p), false);
+        p.sendMessage(ChatColor.GRAY + "You are now spectating " + target.getName() + ".");
 
-		removeSpectator(getTarget(p), p);
+    }
 
-		if (isScanning(p)) {
+    public void stopSpectating(Player p, boolean loadState) {
 
-			stopScanning(p);
+        setSpectating(p, false);
+        setBeingSpectated(getTarget(p), false);
 
-		}
+        removeSpectator(getTarget(p), p);
 
-		for (PotionEffect e : p.getActivePotionEffects()) {
+        if (isScanning(p)) {
 
-			p.removePotionEffect(e.getType());
+            stopScanning(p);
 
-		}
+        }
 
-		if (loadState) {
+        for (final PotionEffect e: p.getActivePotionEffects()) {
 
-			loadPlayerState(p);
+            p.removePotionEffect(e.getType());
 
-		}
+        }
 
-		setExperienceCooldown(p, 0);
+        if (loadState) {
 
-		p.showPlayer(getTarget(p));
+            loadPlayerState(p);
 
-	}
+        }
 
-	public boolean scrollRight(Player p, ArrayList<Player> playerList) {
+        setExperienceCooldown(p, 0);
 
-		SpectateScrollEvent event = new SpectateScrollEvent(p, playerList, ScrollDirection.RIGHT);
-		plugin.getServer().getPluginManager().callEvent(event);
+        p.showPlayer(getTarget(p));
 
-		playerList = new ArrayList<Player>(event.getSpectateList());
+    }
 
-		playerList.remove(p);
+    public boolean scrollRight(Player p, ArrayList<Player> playerList) {
 
-		if (playerList.size() == 0) {
+        final SpectateScrollEvent event = new SpectateScrollEvent(p, playerList, ScrollDirection.RIGHT);
+        plugin.getServer().getPluginManager().callEvent(event);
 
-			return false;
+        playerList = new ArrayList<Player>(event.getSpectateList());
 
-		}
+        playerList.remove(p);
 
-		if (plugin.multiverseInvEnabled()) {
+        if (playerList.size() == 0) {
 
-			if (isScanning(p)) {
+            return false;
 
-				for (Player players : event.getSpectateList()) {
+        }
 
-					if (!players.getWorld().getName().equals(p.getWorld().getName())) {
+        if (plugin.multiverseInvEnabled()) {
 
-						playerList.remove(players);
+            if (isScanning(p)) {
 
-					}
+                for (final Player players: event.getSpectateList()) {
 
-				}
+                    if (!players.getWorld().getName().equals(p.getWorld().getName())) {
 
-			}
+                        playerList.remove(players);
 
-		}
+                    }
 
-		int scrollToIndex;
+                }
 
-		if (getScrollNumber(p, playerList) == playerList.size()) {
+            }
 
-			scrollToIndex = 1;
+        }
 
-		}else {
+        int scrollToIndex;
 
-			scrollToIndex = getScrollNumber(p, playerList) + 1;
+        if (getScrollNumber(p, playerList) == playerList.size()) {
 
-		}
+            scrollToIndex = 1;
 
-		startSpectating(p, playerList.get(scrollToIndex - 1), false);
+        } else {
 
-		return true;
+            scrollToIndex = getScrollNumber(p, playerList) + 1;
 
-	}
+        }
 
-	public boolean scrollLeft(Player p, ArrayList<Player> playerList) {
+        startSpectating(p, playerList.get(scrollToIndex - 1), false);
 
-		SpectateScrollEvent event = new SpectateScrollEvent(p, playerList, ScrollDirection.LEFT);
-		plugin.getServer().getPluginManager().callEvent(event);
+        return true;
 
-		playerList = new ArrayList<Player>(event.getSpectateList());
+    }
 
-		playerList.remove(p);
+    public boolean scrollLeft(Player p, ArrayList<Player> playerList) {
 
-		if (playerList.size() == 0) {
+        final SpectateScrollEvent event = new SpectateScrollEvent(p, playerList, ScrollDirection.LEFT);
+        plugin.getServer().getPluginManager().callEvent(event);
 
-			return false;
+        playerList = new ArrayList<Player>(event.getSpectateList());
 
-		}
+        playerList.remove(p);
 
-		if (plugin.multiverseInvEnabled()) {
+        if (playerList.size() == 0) {
 
-			if (isScanning(p)) {
+            return false;
 
-				for (Player players : event.getSpectateList()) {
+        }
 
-					if (!players.getWorld().getName().equals(p.getWorld().getName())) {
+        if (plugin.multiverseInvEnabled()) {
 
-						playerList.remove(players);
+            if (isScanning(p)) {
 
-					}
+                for (final Player players: event.getSpectateList()) {
 
-				}
+                    if (!players.getWorld().getName().equals(p.getWorld().getName())) {
 
-			}
+                        playerList.remove(players);
 
-		}
+                    }
 
-		int scrollToIndex;
+                }
 
-		if (getScrollNumber(p, playerList) == 1) {
+            }
 
-			scrollToIndex = playerList.size();
+        }
 
-		}else {
+        int scrollToIndex;
 
-			scrollToIndex = getScrollNumber(p, playerList) - 1;
+        if (getScrollNumber(p, playerList) == 1) {
 
-		}
+            scrollToIndex = playerList.size();
 
-		startSpectating(p, playerList.get(scrollToIndex - 1), false);
+        } else {
 
-		return true;
+            scrollToIndex = getScrollNumber(p, playerList) - 1;
 
-	}
+        }
 
-	public int getScrollNumber(Player p, ArrayList<Player> playerList) {
+        startSpectating(p, playerList.get(scrollToIndex - 1), false);
 
-		if (!isSpectating(p)) {
+        return true;
 
-			return 1;
+    }
 
-		}
+    public int getScrollNumber(Player p, ArrayList<Player> playerList) {
 
-		if (!playerList.contains(getTarget(p))) {
+        if (!isSpectating(p)) {
 
-			return 1;
+            return 1;
 
-		}
+        }
 
-		playerList.remove(p);
+        if (!playerList.contains(getTarget(p))) {
 
-		return playerList.indexOf(getTarget(p)) + 1;
+            return 1;
 
-	}
+        }
 
-	public void setSpectateMode(Player p, SpectateMode newMode) {
+        playerList.remove(p);
 
-		if (newMode == SpectateMode.DEFAULT) {
+        return playerList.indexOf(getTarget(p)) + 1;
 
-			playerMode.remove(p.getName());
+    }
 
-		}else {
+    public void setSpectateMode(Player p, SpectateMode newMode) {
 
-			playerMode.put(p.getName(), newMode);
+        if (newMode == SpectateMode.DEFAULT) {
 
-		}
+            playerMode.remove(p.getName());
 
-	}
+        } else {
 
-	public SpectateMode getSpectateMode(Player p) {
+            playerMode.put(p.getName(), newMode);
 
-		if (playerMode.get(p.getName()) == null) {
+        }
 
-			return SpectateMode.DEFAULT;
+    }
 
-		}
+    public SpectateMode getSpectateMode(Player p) {
 
-		return playerMode.get(p.getName());
+        if (playerMode.get(p.getName()) == null) {
 
-	}
+            return SpectateMode.DEFAULT;
 
-	public void setSpectateAngle(Player p, SpectateAngle newAngle) {
+        }
 
-		if (isSpectating(p)) {
+        return playerMode.get(p.getName());
 
-			if (newAngle == SpectateAngle.FIRST_PERSON) {
+    }
 
-				p.hidePlayer(getTarget(p));
+    public void setSpectateAngle(Player p, SpectateAngle newAngle) {
 
-			}else {
+        if (isSpectating(p)) {
 
-				p.showPlayer(getTarget(p));
+            if (newAngle == SpectateAngle.FIRST_PERSON) {
 
-			}
+                p.hidePlayer(getTarget(p));
 
-			if (newAngle == SpectateAngle.FREEROAM) {
+            } else {
 
-				p.teleport(getTarget(p));
+                p.showPlayer(getTarget(p));
 
-			}
+            }
 
-		}
+            if (newAngle == SpectateAngle.FREEROAM) {
 
-		if (newAngle == SpectateAngle.FIRST_PERSON) {
+                p.teleport(getTarget(p));
 
-			playerAngle.remove(p.getName());
+            }
 
-		}else {
+        }
 
-			playerAngle.put(p.getName(), newAngle);
+        if (newAngle == SpectateAngle.FIRST_PERSON) {
 
-		}
+            playerAngle.remove(p.getName());
 
-	}
+        } else {
 
-	public SpectateAngle getSpectateAngle(Player p) {
+            playerAngle.put(p.getName(), newAngle);
 
-		if (playerAngle.get(p.getName()) == null) {
+        }
 
-			return SpectateAngle.FIRST_PERSON;
+    }
 
-		}
+    public SpectateAngle getSpectateAngle(Player p) {
 
-		return playerAngle.get(p.getName());
+        if (playerAngle.get(p.getName()) == null) {
 
-	}
+            return SpectateAngle.FIRST_PERSON;
 
-	public void startScanning(final Player p, int interval) {
+        }
 
-		isScanning.add(p.getName());
+        return playerAngle.get(p.getName());
 
-		scanTask.put(p.getName(), plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
+    }
 
-			public void run() {
+    public void startScanning(final Player p, int interval) {
 
-				scrollRight(p, getSpectateablePlayers());
+        isScanning.add(p.getName());
 
-			}
+        scanTask.put(p.getName(), plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
 
-		}, 0, 20 * interval));
+            @Override
+            public void run() {
 
-	}
+                scrollRight(p, getSpectateablePlayers());
 
-	public void stopScanning(Player p) {
+            }
 
-		plugin.getServer().getScheduler().cancelTask(scanTask.get(p.getName()));
-		isScanning.remove(p.getName());
+        }, 0, 20 * interval));
 
-	}
+    }
 
-	public boolean isScanning(Player p) {
+    public void stopScanning(Player p) {
+
+        plugin.getServer().getScheduler().cancelTask(scanTask.get(p.getName()));
+        isScanning.remove(p.getName());
+
+    }
+
+    public boolean isScanning(Player p) {
 
         return isScanning.contains(p.getName());
 
     }
 
-	public ArrayList<Player> getSpectateablePlayers() {
+    public ArrayList<Player> getSpectateablePlayers() {
 
-		ArrayList<Player> spectateablePlayers = new ArrayList<Player>();
+        final ArrayList<Player> spectateablePlayers = new ArrayList<Player>();
 
-		for (Player onlinePlayers : plugin.getServer().getOnlinePlayers()) {
+        for (final Player onlinePlayers: plugin.getServer().getOnlinePlayers()) {
 
-			if (onlinePlayers.isDead()) {
+            if (onlinePlayers.isDead()) {
 
-				continue;
+                continue;
 
-			}
+            }
 
-			if (isSpectating.contains(onlinePlayers)) {
+            if (isSpectating.contains(onlinePlayers)) {
 
-				continue;
+                continue;
 
-			}
+            }
 
-			if (plugin.cantspectate_permission_enabled) {
+            if (plugin.cantspectate_permission_enabled) {
 
-				if (onlinePlayers.hasPermission("spectate.cantspectate")) {
+                if (onlinePlayers.hasPermission("spectate.cantspectate")) {
 
-					continue;
+                    continue;
 
-				}
+                }
 
-			}
+            }
 
-			spectateablePlayers.add(onlinePlayers);
+            spectateablePlayers.add(onlinePlayers);
 
-		}
+        }
 
-		return spectateablePlayers;
-
-	}
-
-	private void setTarget(Player p, Player ptarget) {
-
-		target.put(p, ptarget);
-
-	}
-
-	public Player getTarget(Player p) {
-
-		return target.get(p);
-
-	}
-
-	public boolean isSpectating(Player p) {
-
-		return isSpectating.contains(p);
-
-	}
-
-	public boolean isBeingSpectated(Player p) {
-
-		return isBeingSpectated.contains(p);
-
-	}
-
-	private void setBeingSpectated(Player p, boolean beingSpectated) {
-
-		if (beingSpectated) {
-
-			if (isBeingSpectated.contains(p)) {
-
-				return;
-
-			}
-
-			isBeingSpectated.add(p);
-
-		}else {
-
-			isBeingSpectated.remove(p);
-
-		}
-
-	}
-
-	private void addSpectator(Player p, Player spectator) {
-
-		if (spectators.get(p) == null) {
-
-			ArrayList<Player> newSpectators = new ArrayList<Player>();
-
-			newSpectators.add(spectator);
-
-			spectators.put(p, newSpectators);
-
-		}else {
-
-			spectators.get(p).add(spectator);
-
-		}
-
-	}
-
-	private void removeSpectator(Player p, Player spectator) {
-
-        if (spectators.get(p) != null) {
-
-			if (spectators.get(p).size() == 1) {
-
-				spectators.remove(p);
-
-			}else {
-
-				spectators.get(p).remove(spectator);
-
-			}
-
-		}
+        return spectateablePlayers;
 
     }
 
-	public ArrayList<Player> getSpectators(Player p) {
+    private void setTarget(Player p, Player ptarget) {
 
-		return (spectators.get(p) == null ? new ArrayList<Player>() : spectators.get(p));
+        target.put(p, ptarget);
 
-	}
+    }
 
-	public ArrayList<Player> getSpectatingPlayers() {
+    public Player getTarget(Player p) {
 
-		ArrayList<Player> spectatingPlayers = new ArrayList<Player>();
+        return target.get(p);
 
-		for (Player p : plugin.getServer().getOnlinePlayers()) {
+    }
 
-			if (isSpectating(p)) {
+    public boolean isSpectating(Player p) {
 
-				spectatingPlayers.add(p);
+        return isSpectating.contains(p);
 
-			}
+    }
 
-		}
+    public boolean isBeingSpectated(Player p) {
 
-		return spectatingPlayers;
+        return isBeingSpectated.contains(p);
 
-	}
+    }
 
-	private void setSpectating(Player p, boolean spectating) {
+    private void setBeingSpectated(Player p, boolean beingSpectated) {
 
-		if (spectating) {
+        if (beingSpectated) {
 
-			if (isSpectating.contains(p)) {
+            if (isBeingSpectated.contains(p)) {
 
-				return;
+                return;
 
-			}
+            }
 
-			isSpectating.add(p);
+            isBeingSpectated.add(p);
 
-		}else {
+        } else {
 
-			isSpectating.remove(p);
+            isBeingSpectated.remove(p);
 
-		}
+        }
 
-	}
-	
-	public void setModifyInventory(Player p, boolean modify) {
-	    if (modify) {
-	        if (inventoryOff.contains(p.getName())) {
-	            inventoryOff.remove(p.getName());
-	        }
-	    } else {
-	        if (!inventoryOff.contains(p.getName())) {
-	            inventoryOff.add(p.getName());
-	        }
-	    }
-	}
+    }
 
-	public void disableScroll(final Player player, long ticks) {
+    private void addSpectator(Player p, Player spectator) {
 
-		if (!isClick.contains(player.getName())) {
+        if (spectators.get(p) == null) {
 
-			isClick.add(player.getName());
+            final ArrayList<Player> newSpectators = new ArrayList<Player>();
 
-			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+            newSpectators.add(spectator);
 
-				public void run() {
+            spectators.put(p, newSpectators);
 
-					isClick.remove(player.getName());
+        } else {
 
-				}
+            spectators.get(p).add(spectator);
 
-			}, ticks);
+        }
 
-		}
+    }
 
-	}
+    private void removeSpectator(Player p, Player spectator) {
 
-	public Location getSpectateLocation(Player p) {
-		
-		if (getSpectateAngle(p) == SpectateAngle.FIRST_PERSON) {
-			
-			return (getTarget(p).getLocation());
-			
-		}
+        if (spectators.get(p) != null) {
 
-		Location playerLoc = getTarget(p).getLocation();
+            if (spectators.get(p).size() == 1) {
 
-		double currentSubtraction = 0;
-		Location previousLoc = playerLoc;
+                spectators.remove(p);
 
-		while (currentSubtraction <= 5)  {
+            } else {
 
-			playerLoc = getTarget(p).getLocation();
+                spectators.get(p).remove(spectator);
 
-			Vector v = getTarget(p).getLocation().getDirection().normalize();
-			v.multiply(currentSubtraction);
+            }
 
-			if (getSpectateAngle(p) == SpectateAngle.THIRD_PERSON) {
+        }
 
-				playerLoc.subtract(v);
+    }
 
-			}else if (getSpectateAngle(p) == SpectateAngle.THIRD_PERSON_FRONT) {
+    public ArrayList<Player> getSpectators(Player p) {
 
-				playerLoc.add(v);
+        return (spectators.get(p) == null ? new ArrayList<Player>() : spectators.get(p));
 
-				if (playerLoc.getYaw() < -180) {
+    }
 
-					playerLoc.setYaw(playerLoc.getYaw() + 180);
+    public ArrayList<Player> getSpectatingPlayers() {
 
-				}else {
+        final ArrayList<Player> spectatingPlayers = new ArrayList<Player>();
 
-					playerLoc.setYaw(playerLoc.getYaw() - 180);
+        for (final Player p: plugin.getServer().getOnlinePlayers()) {
 
-				}
+            if (isSpectating(p)) {
 
-				playerLoc.setPitch(-playerLoc.getPitch());
+                spectatingPlayers.add(p);
 
-			}
+            }
 
-			Material tempMat = new Location(playerLoc.getWorld(), playerLoc.getX(), playerLoc.getY() + 1.5, playerLoc.getZ()).getBlock().getType();
+        }
 
-			if (tempMat != Material.AIR && tempMat != Material.WATER && tempMat != Material.STATIONARY_WATER) {
+        return spectatingPlayers;
 
-				return previousLoc;
+    }
 
-			}
+    private void setSpectating(Player p, boolean spectating) {
 
-			previousLoc = playerLoc;
+        if (spectating) {
 
-			currentSubtraction += 0.5;
+            if (isSpectating.contains(p)) {
 
-		}
+                return;
 
-		return playerLoc;
+            }
 
-	}
+            isSpectating.add(p);
 
-	public PlayerState getPlayerState(Player p) {
+        } else {
 
-		return states.get(p);
+            isSpectating.remove(p);
 
-	}
+        }
 
-	public void savePlayerState(Player p) {
+    }
 
-		PlayerState playerstate = new PlayerState(p);
-		states.put(p, playerstate);
+    public void setModifyInventory(Player p, boolean modify) {
+        if (modify) {
+            if (inventoryOff.contains(p.getName())) {
+                inventoryOff.remove(p.getName());
+            }
+        } else {
+            if (!inventoryOff.contains(p.getName())) {
+                inventoryOff.add(p.getName());
+            }
+        }
+    }
 
-	}
+    public void disableScroll(final Player player, long ticks) {
 
-	public void loadPlayerState(Player toPlayer) {
+        if (!isClick.contains(player.getName())) {
 
-		loadPlayerState(toPlayer, toPlayer);
+            isClick.add(player.getName());
 
-	}
+            plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 
-	public void loadPlayerState(Player fromState, Player toPlayer) {
+                @Override
+                public void run() {
 
-		if (plugin.multiverseInvEnabled() && multiInvStates.get(fromState) != null) {
+                    isClick.remove(player.getName());
 
-			loadFinalState(multiInvStates.get(fromState), toPlayer);
-			multiInvStates.remove(fromState);
+                }
 
-		}
+            }, ticks);
 
-		loadFinalState(getPlayerState(fromState), toPlayer);
-		states.remove(fromState);
+        }
 
-	}
+    }
 
-	private void loadFinalState(PlayerState state, Player toPlayer) {
+    public Location getSpectateLocation(Player p) {
 
-		toPlayer.teleport(state.location);
+        if (getSpectateAngle(p) == SpectateAngle.FIRST_PERSON) {
 
-		toPlayer.getInventory().setContents(state.inventory);
-		toPlayer.getInventory().setArmorContents(state.armor);
-		toPlayer.setFoodLevel(state.hunger);
-		toPlayer.setHealth(state.health);
-		toPlayer.setLevel(state.level);
-		toPlayer.setExp(state.exp);
-		toPlayer.getInventory().setHeldItemSlot(state.slot);
-		toPlayer.setAllowFlight(state.allowFlight);
-		toPlayer.setFlying(state.isFlying);
-		toPlayer.setGameMode(state.mode);
+            return (getTarget(p).getLocation());
 
-		for (Player onlinePlayers : plugin.getServer().getOnlinePlayers()) {
+        }
 
-			if (!state.vanishedFrom.contains(onlinePlayers)) {
+        Location playerLoc = getTarget(p).getLocation();
 
-				onlinePlayers.showPlayer(toPlayer);
+        double currentSubtraction = 0;
+        Location previousLoc = playerLoc;
 
-			}
+        while (currentSubtraction <= 5) {
 
-		}
+            playerLoc = getTarget(p).getLocation();
 
-		for (PotionEffect e : state.potions) {
+            final Vector v = getTarget(p).getLocation().getDirection().normalize();
+            v.multiply(currentSubtraction);
 
-			toPlayer.addPotionEffect(e);
+            if (getSpectateAngle(p) == SpectateAngle.THIRD_PERSON) {
 
-		}
+                playerLoc.subtract(v);
 
-	}
+            } else if (getSpectateAngle(p) == SpectateAngle.THIRD_PERSON_FRONT) {
 
-	public ArrayList<Player> getVanishedFromList(Player p) {
+                playerLoc.add(v);
 
-		return getPlayerState(p).vanishedFrom;
+                if (playerLoc.getYaw() < -180) {
 
-	}
+                    playerLoc.setYaw(playerLoc.getYaw() + 180);
 
-	public void setExperienceCooldown(Player p, int cooldown) {
+                } else {
+
+                    playerLoc.setYaw(playerLoc.getYaw() - 180);
+
+                }
+
+                playerLoc.setPitch(-playerLoc.getPitch());
+
+            }
+
+            final Material tempMat = new Location(playerLoc.getWorld(), playerLoc.getX(), playerLoc.getY() + 1.5,
+                    playerLoc.getZ()).getBlock().getType();
+
+            if (tempMat != Material.AIR && tempMat != Material.WATER && tempMat != Material.STATIONARY_WATER) {
+
+                return previousLoc;
+
+            }
+
+            previousLoc = playerLoc;
+
+            currentSubtraction += 0.5;
+
+        }
+
+        return playerLoc;
+
+    }
+
+    public PlayerState getPlayerState(Player p) {
+
+        return states.get(p);
+
+    }
+
+    public void savePlayerState(Player p) {
+
+        final PlayerState playerstate = new PlayerState(p);
+        states.put(p, playerstate);
+
+    }
+
+    public void loadPlayerState(Player toPlayer) {
+
+        loadPlayerState(toPlayer, toPlayer);
+
+    }
+
+    public void loadPlayerState(Player fromState, Player toPlayer) {
+
+        if (plugin.multiverseInvEnabled() && multiInvStates.get(fromState) != null) {
+
+            loadFinalState(multiInvStates.get(fromState), toPlayer);
+            multiInvStates.remove(fromState);
+
+        }
+
+        loadFinalState(getPlayerState(fromState), toPlayer);
+        states.remove(fromState);
+
+    }
+
+    private void loadFinalState(PlayerState state, Player toPlayer) {
+
+        toPlayer.teleport(state.location);
+
+        toPlayer.getInventory().setContents(state.inventory);
+        toPlayer.getInventory().setArmorContents(state.armor);
+        toPlayer.setFoodLevel(state.hunger);
+        toPlayer.setHealth(state.health);
+        toPlayer.setLevel(state.level);
+        toPlayer.setExp(state.exp);
+        toPlayer.getInventory().setHeldItemSlot(state.slot);
+        toPlayer.setAllowFlight(state.allowFlight);
+        toPlayer.setFlying(state.isFlying);
+        toPlayer.setGameMode(state.mode);
+
+        for (final Player onlinePlayers: plugin.getServer().getOnlinePlayers()) {
+
+            if (!state.vanishedFrom.contains(onlinePlayers)) {
+
+                onlinePlayers.showPlayer(toPlayer);
+
+            }
+
+        }
+
+        for (final PotionEffect e: state.potions) {
+
+            toPlayer.addPotionEffect(e);
+
+        }
+
+    }
+
+    public ArrayList<Player> getVanishedFromList(Player p) {
+
+        return getPlayerState(p).vanishedFrom;
+
+    }
+
+    public void setExperienceCooldown(Player p, int cooldown) {
 
         try {
 
-            Method handle = p.getClass().getDeclaredMethod("getHandle");
-            Object entityPlayer = handle.invoke(p);
-            Field cooldownField = entityPlayer.getClass().getSuperclass().getDeclaredField("bu");
+            final Method handle = p.getClass().getDeclaredMethod("getHandle");
+            final Object entityPlayer = handle.invoke(p);
+            final Field cooldownField = entityPlayer.getClass().getSuperclass().getDeclaredField("bu");
             cooldownField.setAccessible(true);
             cooldownField.setInt(entityPlayer, cooldown);
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
             e.printStackTrace();
 
         }
 
-	}
+    }
 
-	public boolean isReadyForNextScroll(Player p) {
+    public boolean isReadyForNextScroll(Player p) {
 
-		return !isClick.contains(p.getName());
+        return !isClick.contains(p.getName());
 
-	}
+    }
 
-	public double roundTwoDecimals(double d) {
+    public double roundTwoDecimals(double d) {
 
-		try {
+        try {
 
-			DecimalFormat twoDForm = new DecimalFormat("#.##");
-			return Double.valueOf(twoDForm.format(d));
+            final DecimalFormat twoDForm = new DecimalFormat("#.##");
+            return Double.valueOf(twoDForm.format(d));
 
-		} catch (NumberFormatException e) {
+        } catch (final NumberFormatException e) {
 
-			return d;
+            return d;
 
-		}
+        }
 
-	}
+    }
 
 }

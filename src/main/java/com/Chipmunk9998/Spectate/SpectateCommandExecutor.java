@@ -11,341 +11,349 @@ import com.Chipmunk9998.Spectate.api.SpectateAngle;
 import com.Chipmunk9998.Spectate.api.SpectateMode;
 
 public class SpectateCommandExecutor implements CommandExecutor {
-	
-	Spectate plugin;
-	
-	public SpectateCommandExecutor(Spectate plugin) {
-		
-		this.plugin = plugin;
-		
-	}
 
-	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+    Spectate plugin;
 
-		if (cmd.getName().equalsIgnoreCase("spectate")) {
+    public SpectateCommandExecutor(Spectate plugin) {
 
-			if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+        this.plugin = plugin;
 
-				if (!sender.hasPermission("spectate.help") && !sender.hasPermission("spectate.on") && !sender.hasPermission("spectate.off")) {
+    }
 
-					sender.sendMessage(ChatColor.RED + "You do not have permission.");
-					return true;
+    @SuppressWarnings("deprecation")
+    @Override
+    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 
-				}
+        if (cmd.getName().equalsIgnoreCase("spectate")) {
 
-				showHelp(sender);
-				return true;
+            if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
 
-			}
-			
-			if (args[0].equalsIgnoreCase("reload")) {
-				
-				if (!sender.isOp()) {
-					
-					sender.sendMessage(ChatColor.RED + "You do not have permission.");
-					return true;
-					
-				}
-				
-				plugin.loadConfig();
-				sender.sendMessage(ChatColor.GRAY + "Spectate config reloaded.");
-				return true;
-				
-			}
-			
-			if (!(sender instanceof Player)) {
+                if (!sender.hasPermission("spectate.help") && !sender.hasPermission("spectate.on")
+                        && !sender.hasPermission("spectate.off")) {
 
-				sender.sendMessage(ChatColor.RED + "You can't execute this command from the console.");
-				return true;
+                    sender.sendMessage(ChatColor.RED + "You do not have permission.");
+                    return true;
 
-			}
-			
-			Player cmdsender = (Player) sender;
+                }
 
-			if (args[0].equalsIgnoreCase("off")) {
+                showHelp(sender);
+                return true;
 
-				if (!cmdsender.hasPermission("spectate.off")) {
+            }
 
-					cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
-					return true;
+            if (args[0].equalsIgnoreCase("reload")) {
 
-				}
+                if (!sender.isOp()) {
 
-				if (!Spectate.getAPI().isSpectating(cmdsender)) {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission.");
+                    return true;
 
-					cmdsender.sendMessage(ChatColor.GRAY + "You are not currently spectating anyone.");
-					return true;
+                }
 
-				}
+                plugin.loadConfig();
+                sender.sendMessage(ChatColor.GRAY + "Spectate config reloaded.");
+                return true;
 
-				cmdsender.sendMessage(ChatColor.GRAY + "You have stopped spectating " + Spectate.getAPI().getTarget(cmdsender).getName() + ".");
-				Spectate.getAPI().stopSpectating(cmdsender, true);
-				return true;
+            }
 
-			}else if (args[0].equalsIgnoreCase("mode")) {
+            if (!(sender instanceof Player)) {
 
-				if (!cmdsender.hasPermission("spectate.mode")) {
+                sender.sendMessage(ChatColor.RED + "You can't execute this command from the console.");
+                return true;
 
-					cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
-					return true;
+            }
 
-				}
+            final Player cmdsender = (Player) sender;
 
-				if (args.length < 2) {
+            if (args[0].equalsIgnoreCase("off")) {
 
-					cmdsender.sendMessage(ChatColor.RED + "Error: You must enter in a mode.");
-					return true;
+                if (!cmdsender.hasPermission("spectate.off")) {
 
-				}
+                    cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
+                    return true;
 
-				SpectateMode newMode = SpectateMode.DEFAULT;
+                }
 
-				if (args[1].equalsIgnoreCase("1") || args[1].equalsIgnoreCase("default")) {
+                if (!Spectate.getAPI().isSpectating(cmdsender)) {
 
-					if (Spectate.getAPI().getSpectateMode(cmdsender) == SpectateMode.DEFAULT) {
+                    cmdsender.sendMessage(ChatColor.GRAY + "You are not currently spectating anyone.");
+                    return true;
 
-						cmdsender.sendMessage(ChatColor.RED + "Error: You are already in this mode.");
+                }
 
-					}else {
+                cmdsender.sendMessage(ChatColor.GRAY + "You have stopped spectating "
+                        + Spectate.getAPI().getTarget(cmdsender).getName() + ".");
+                Spectate.getAPI().stopSpectating(cmdsender, true);
+                return true;
 
-						newMode = SpectateMode.DEFAULT;
-						cmdsender.sendMessage(ChatColor.GRAY + "You are now using the default spectate mode.");
+            } else if (args[0].equalsIgnoreCase("mode")) {
 
-					}
+                if (!cmdsender.hasPermission("spectate.mode")) {
 
-				}else if (args[1].equalsIgnoreCase("2") || args[1].equalsIgnoreCase("scroll")) {
+                    cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
+                    return true;
 
-					if (Spectate.getAPI().getSpectateMode(cmdsender) == SpectateMode.SCROLL) {
+                }
 
-						cmdsender.sendMessage(ChatColor.RED + "Error: You are already in this mode.");
+                if (args.length < 2) {
 
-					}else {
+                    cmdsender.sendMessage(ChatColor.RED + "Error: You must enter in a mode.");
+                    return true;
 
-						newMode = SpectateMode.SCROLL;
-						cmdsender.sendMessage(ChatColor.GRAY + "You are now using the scroll spectate mode.");
+                }
 
-					}
+                SpectateMode newMode = SpectateMode.DEFAULT;
 
-				}else {
+                if (args[1].equalsIgnoreCase("1") || args[1].equalsIgnoreCase("default")) {
 
-					cmdsender.sendMessage(ChatColor.RED + "Error: Unknown mode \"" + args[1] + "\"");
-					return true;
+                    if (Spectate.getAPI().getSpectateMode(cmdsender) == SpectateMode.DEFAULT) {
 
-				}
+                        cmdsender.sendMessage(ChatColor.RED + "Error: You are already in this mode.");
 
-				Spectate.getAPI().setSpectateMode(cmdsender, newMode);
-				return true;
+                    } else {
 
-			}else if (args[0].equalsIgnoreCase("angle")) {
+                        newMode = SpectateMode.DEFAULT;
+                        cmdsender.sendMessage(ChatColor.GRAY + "You are now using the default spectate mode.");
 
-				if (!cmdsender.hasPermission("spectate.angle")) {
+                    }
 
-					cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
-					return true;
+                } else if (args[1].equalsIgnoreCase("2") || args[1].equalsIgnoreCase("scroll")) {
 
-				}
+                    if (Spectate.getAPI().getSpectateMode(cmdsender) == SpectateMode.SCROLL) {
 
-				if (args.length < 2) {
+                        cmdsender.sendMessage(ChatColor.RED + "Error: You are already in this mode.");
 
-					cmdsender.sendMessage(ChatColor.RED + "Error: You must enter in an angle.");
-					return true;
+                    } else {
 
-				}
+                        newMode = SpectateMode.SCROLL;
+                        cmdsender.sendMessage(ChatColor.GRAY + "You are now using the scroll spectate mode.");
 
-				SpectateAngle newAngle;
+                    }
 
-				if (args[1].equalsIgnoreCase("1") || args[1].equalsIgnoreCase("firstperson")) {
+                } else {
 
-					if (Spectate.getAPI().getSpectateAngle(cmdsender) == SpectateAngle.FIRST_PERSON) {
+                    cmdsender.sendMessage(ChatColor.RED + "Error: Unknown mode \"" + args[1] + "\"");
+                    return true;
 
-						cmdsender.sendMessage(ChatColor.RED + "Error: You are already in first person mode.");
-						return true;
+                }
 
-					}else {
+                Spectate.getAPI().setSpectateMode(cmdsender, newMode);
+                return true;
 
-						newAngle = SpectateAngle.FIRST_PERSON;
-						cmdsender.sendMessage(ChatColor.GRAY + "You are now in first person mode.");
+            } else if (args[0].equalsIgnoreCase("angle")) {
 
-					}
+                if (!cmdsender.hasPermission("spectate.angle")) {
 
-				}else if (args[1].equalsIgnoreCase("2") || args[1].equalsIgnoreCase("thirdperson")) {
+                    cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
+                    return true;
 
-					if (Spectate.getAPI().getSpectateAngle(cmdsender) == SpectateAngle.THIRD_PERSON) {
+                }
 
-						cmdsender.sendMessage(ChatColor.RED + "Error: You are already in third person mode.");
-						return true;
+                if (args.length < 2) {
 
-					}else {
+                    cmdsender.sendMessage(ChatColor.RED + "Error: You must enter in an angle.");
+                    return true;
 
-						newAngle = SpectateAngle.THIRD_PERSON;
-						cmdsender.sendMessage(ChatColor.GRAY + "You are now in third person mode.");
+                }
 
-					}
+                SpectateAngle newAngle;
 
-				}else if (args[1].equalsIgnoreCase("3") || args[1].equalsIgnoreCase("thirdpersonfront")) {
+                if (args[1].equalsIgnoreCase("1") || args[1].equalsIgnoreCase("firstperson")) {
 
-					if (Spectate.getAPI().getSpectateAngle(cmdsender) == SpectateAngle.THIRD_PERSON_FRONT) {
+                    if (Spectate.getAPI().getSpectateAngle(cmdsender) == SpectateAngle.FIRST_PERSON) {
 
-						cmdsender.sendMessage(ChatColor.RED + "Error: You are already in third person front mode.");
-						return true;
+                        cmdsender.sendMessage(ChatColor.RED + "Error: You are already in first person mode.");
+                        return true;
 
-					}else {
+                    } else {
 
-						newAngle = SpectateAngle.THIRD_PERSON_FRONT;
-						cmdsender.sendMessage(ChatColor.GRAY + "You are now in third person front mode.");
+                        newAngle = SpectateAngle.FIRST_PERSON;
+                        cmdsender.sendMessage(ChatColor.GRAY + "You are now in first person mode.");
 
-					}
+                    }
 
-				}else if (args[1].equalsIgnoreCase("4") || args[1].equalsIgnoreCase("freeroam")) {
+                } else if (args[1].equalsIgnoreCase("2") || args[1].equalsIgnoreCase("thirdperson")) {
 
-					if (Spectate.getAPI().getSpectateAngle(cmdsender) == SpectateAngle.FREEROAM) {
+                    if (Spectate.getAPI().getSpectateAngle(cmdsender) == SpectateAngle.THIRD_PERSON) {
 
-						cmdsender.sendMessage(ChatColor.RED + "Error: You are already in free roam mode.");
-						return true;
+                        cmdsender.sendMessage(ChatColor.RED + "Error: You are already in third person mode.");
+                        return true;
 
-					}else {
+                    } else {
 
-						newAngle = SpectateAngle.FREEROAM;
-						cmdsender.sendMessage(ChatColor.GRAY + "You are now in free roam mode.");
+                        newAngle = SpectateAngle.THIRD_PERSON;
+                        cmdsender.sendMessage(ChatColor.GRAY + "You are now in third person mode.");
 
-					}
+                    }
 
-				}else {
+                } else if (args[1].equalsIgnoreCase("3") || args[1].equalsIgnoreCase("thirdpersonfront")) {
 
-					cmdsender.sendMessage(ChatColor.RED + "Error: Unknown angle \"" + args[1] + "\"");
-					return true;
+                    if (Spectate.getAPI().getSpectateAngle(cmdsender) == SpectateAngle.THIRD_PERSON_FRONT) {
 
-				}
+                        cmdsender.sendMessage(ChatColor.RED + "Error: You are already in third person front mode.");
+                        return true;
 
-				Spectate.getAPI().setSpectateAngle(cmdsender, newAngle);
-				return true;
+                    } else {
 
-			}else if (args[0].equalsIgnoreCase("scan")) {
+                        newAngle = SpectateAngle.THIRD_PERSON_FRONT;
+                        cmdsender.sendMessage(ChatColor.GRAY + "You are now in third person front mode.");
 
-				if (!cmdsender.hasPermission("spectate.scan")) {
+                    }
 
-					cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
-					return true;
+                } else if (args[1].equalsIgnoreCase("4") || args[1].equalsIgnoreCase("freeroam")) {
 
-				}
+                    if (Spectate.getAPI().getSpectateAngle(cmdsender) == SpectateAngle.FREEROAM) {
 
-				if (Spectate.getAPI().isScanning(cmdsender)) {
+                        cmdsender.sendMessage(ChatColor.RED + "Error: You are already in free roam mode.");
+                        return true;
 
-					cmdsender.sendMessage(ChatColor.RED + "You are already scanning.");
-					return true;
+                    } else {
 
-				}
+                        newAngle = SpectateAngle.FREEROAM;
+                        cmdsender.sendMessage(ChatColor.GRAY + "You are now in free roam mode.");
 
-				if (args.length < 2) {
+                    }
 
-					cmdsender.sendMessage(ChatColor.RED + "Error: You must enter in an interval.");
-					return true;
+                } else {
 
-				}
+                    cmdsender.sendMessage(ChatColor.RED + "Error: Unknown angle \"" + args[1] + "\"");
+                    return true;
 
-				int interval;
+                }
 
-				try {
+                Spectate.getAPI().setSpectateAngle(cmdsender, newAngle);
+                return true;
 
-					interval = Integer.parseInt(args[1]);
+            } else if (args[0].equalsIgnoreCase("scan")) {
 
-				}catch (NumberFormatException e) {
+                if (!cmdsender.hasPermission("spectate.scan")) {
 
-					cmdsender.sendMessage(ChatColor.RED + "Error: " + args[1] + " is not a number.");
-					return true;
+                    cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
+                    return true;
 
-				}
+                }
 
-				Spectate.getAPI().savePlayerState(cmdsender);
-				Spectate.getAPI().startScanning(cmdsender, interval);
-				return true;
+                if (Spectate.getAPI().isScanning(cmdsender)) {
 
-			}
+                    cmdsender.sendMessage(ChatColor.RED + "You are already scanning.");
+                    return true;
 
-			if (!cmdsender.hasPermission("spectate.on")) {
+                }
 
-				cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
-				return true;
+                if (args.length < 2) {
 
-			}
+                    cmdsender.sendMessage(ChatColor.RED + "Error: You must enter in an interval.");
+                    return true;
 
-			Player targetPlayer = Bukkit.getServer().getPlayer(args[0]);
+                }
 
-			if (targetPlayer == null) {
+                int interval;
 
-				cmdsender.sendMessage(ChatColor.RED + "Error: Player is not online.");
-				return true;
+                try {
 
-			}
+                    interval = Integer.parseInt(args[1]);
 
-			if (cmdsender.getName().equals(targetPlayer.getName())) {
+                } catch (final NumberFormatException e) {
 
-				cmdsender.sendMessage(ChatColor.GRAY + "Did you really just try to spectate yourself?");
-				return true;
+                    cmdsender.sendMessage(ChatColor.RED + "Error: " + args[1] + " is not a number.");
+                    return true;
 
-			}
-			
-			if (plugin.cantspectate_permission_enabled) {
+                }
 
-				if (targetPlayer.hasPermission("spectate.cantspectate")) {
+                Spectate.getAPI().savePlayerState(cmdsender);
+                Spectate.getAPI().startScanning(cmdsender, interval);
+                return true;
 
-					cmdsender.sendMessage(ChatColor.GRAY + "This person can not be spectated.");
-					return true;
+            }
 
-				}
+            if (!cmdsender.hasPermission("spectate.on")) {
 
-			}
+                cmdsender.sendMessage(ChatColor.RED + "You do not have permission.");
+                return true;
 
-			if (Spectate.getAPI().isSpectating(cmdsender)) {
+            }
 
-				if (targetPlayer.getName().equals(Spectate.getAPI().getTarget(cmdsender).getName())) {
+            final Player targetPlayer = Bukkit.getServer().getPlayer(args[0]);
 
-					cmdsender.sendMessage(ChatColor.GRAY + "You are already spectating them.");
-					return true;
+            if (targetPlayer == null) {
 
-				}
+                cmdsender.sendMessage(ChatColor.RED + "Error: Player is not online.");
+                return true;
 
-			}
+            }
 
-			if (Spectate.getAPI().isSpectating(targetPlayer)) {
+            if (cmdsender.getName().equals(targetPlayer.getName())) {
 
-				cmdsender.sendMessage(ChatColor.GRAY + "They are currently spectating someone.");
-				return true;
+                cmdsender.sendMessage(ChatColor.GRAY + "Did you really just try to spectate yourself?");
+                return true;
 
-			}
+            }
 
-			if (targetPlayer.isDead()) {
+            if (plugin.cantspectate_permission_enabled) {
 
-				cmdsender.sendMessage(ChatColor.GRAY + "They are currently dead.");
-				return true;
+                if (targetPlayer.hasPermission("spectate.cantspectate")) {
 
-			}
+                    cmdsender.sendMessage(ChatColor.GRAY + "This person can not be spectated.");
+                    return true;
 
-			Spectate.getAPI().startSpectating(cmdsender, Bukkit.getServer().getPlayer(args[0]), true);
+                }
 
-			return true;
+            }
 
-		}else if (cmd.getName().equalsIgnoreCase("control")) {
+            if (Spectate.getAPI().isSpectating(cmdsender)) {
 
-			//TODO: Finish controlling
+                if (targetPlayer.getName().equals(Spectate.getAPI().getTarget(cmdsender).getName())) {
 
-		}
+                    cmdsender.sendMessage(ChatColor.GRAY + "You are already spectating them.");
+                    return true;
 
-		return true;
+                }
 
-	}
+            }
 
-	public void showHelp(CommandSender cmdsender) {
+            if (Spectate.getAPI().isSpectating(targetPlayer)) {
 
-		cmdsender.sendMessage(ChatColor.RED + "Commands for Spectate:");
-		cmdsender.sendMessage(ChatColor.RED + "/spectate [PlayerName]: " + ChatColor.GRAY + "Puts you into spectate mode and lets you see what the target sees.");
-		cmdsender.sendMessage(ChatColor.RED + "/spectate off : " + ChatColor.GRAY + "Takes you out of spectate mode.");
-		cmdsender.sendMessage(ChatColor.RED + "/spectate scan [interval] : " + ChatColor.GRAY + "Starts the scanning mode with the specified interval.");
-		cmdsender.sendMessage(ChatColor.RED + "/spectate mode [1 | default]: " + ChatColor.GRAY + "Puts you into the default spectate mode.");
-		cmdsender.sendMessage(ChatColor.RED + "/spectate mode [2 | scroll]: " + ChatColor.GRAY + "Puts you into scroll style mode with left click and right click controls.");
-		cmdsender.sendMessage(ChatColor.RED + "/spectate reload : " + ChatColor.GRAY + "Reloads the config.");
-		cmdsender.sendMessage(ChatColor.RED + "/spectate help : " + ChatColor.GRAY + "Shows this help page.");
+                cmdsender.sendMessage(ChatColor.GRAY + "They are currently spectating someone.");
+                return true;
 
-	}
+            }
+
+            if (targetPlayer.isDead()) {
+
+                cmdsender.sendMessage(ChatColor.GRAY + "They are currently dead.");
+                return true;
+
+            }
+
+            Spectate.getAPI().startSpectating(cmdsender, Bukkit.getServer().getPlayer(args[0]), true);
+
+            return true;
+
+        } else if (cmd.getName().equalsIgnoreCase("control")) {
+
+            // TODO: Finish controlling
+
+        }
+
+        return true;
+
+    }
+
+    public void showHelp(CommandSender cmdsender) {
+
+        cmdsender.sendMessage(ChatColor.RED + "Commands for Spectate:");
+        cmdsender.sendMessage(ChatColor.RED + "/spectate [PlayerName]: " + ChatColor.GRAY
+                + "Puts you into spectate mode and lets you see what the target sees.");
+        cmdsender.sendMessage(ChatColor.RED + "/spectate off : " + ChatColor.GRAY + "Takes you out of spectate mode.");
+        cmdsender.sendMessage(ChatColor.RED + "/spectate scan [interval] : " + ChatColor.GRAY
+                + "Starts the scanning mode with the specified interval.");
+        cmdsender.sendMessage(ChatColor.RED + "/spectate mode [1 | default]: " + ChatColor.GRAY
+                + "Puts you into the default spectate mode.");
+        cmdsender.sendMessage(ChatColor.RED + "/spectate mode [2 | scroll]: " + ChatColor.GRAY
+                + "Puts you into scroll style mode with left click and right click controls.");
+        cmdsender.sendMessage(ChatColor.RED + "/spectate reload : " + ChatColor.GRAY + "Reloads the config.");
+        cmdsender.sendMessage(ChatColor.RED + "/spectate help : " + ChatColor.GRAY + "Shows this help page.");
+
+    }
 
 }
